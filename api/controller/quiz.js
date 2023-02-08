@@ -146,3 +146,64 @@ export const deleteQuiz = async (req, res) => {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
+
+//Check quiz
+export const checkQuiz = async (req, res) => {
+
+    //api request validation 
+    let validation_schema = joi.object({
+        _id: joi.string().messages({
+            'string.empty': "_id cannot be empty",
+            'any.required': "_id is required"
+        }).required(),
+        answers: joi.array().items(joi.object().keys({
+            question_id: joi.string().required(),
+            attempted_answer: joi.string().required()
+        })).min(1)
+
+    })
+
+    //error handeling of api validation
+    let { error, value } = validation_schema.validate(req.body)
+    if (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+
+    try {
+
+        //get quiz_id
+        var { _id, answers } = req.body;
+        const quiz = await Quiz.findOne({ _id }).lean()
+
+        //check if quiz is avaible, if not show message
+        if (!quiz) {
+            return res.json({ error: true, info: "No Quiz found", data: {} })
+        }
+
+        if (quiz.questions.length !== answers.length) {
+            return res.json({ error: true, info: "Answers must be of equal length to the questions", data: {} })
+        }
+
+        for (let i = 0; i < quiz.questions.length; i += 1) {
+            if (quiz.questions[i]._id.toString() !== answers[i].question_id) {
+                return res.json({ error: true, info: "Answers must be in the same order as the questions or question id does not exist", data: {} })
+            }
+        }
+
+        //converting array to object. get values of array (quiz_id and answer value)
+        let answers_object = answers.reduce((prev_object, answer) => {
+            return { ...prev_object, [answer.question_id]: answer.attempted_answer }
+        }, {})
+
+        //check if user's entered answer match with the provided answer, // if yes return correct number of answer
+        let correct_answers = quiz.questions.reduce((correct_count, question) => {
+            return question.answer === answers_object[question._id] ? correct_count + 1 : correct_count
+        }, 0)
+
+        //send res on success 
+        res.json({ error: false, info: "", data: { correct_answers, wrong_answer: quiz.questions.length - correct_answers } })
+
+    } catch (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+}

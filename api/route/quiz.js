@@ -1,5 +1,5 @@
 import express from 'express';
-import { createQuiz, getQuizList, getQuiz, deleteQuiz } from '../controller/quiz.js';
+import { createQuiz, getQuizList, getQuiz, deleteQuiz, checkQuiz } from '../controller/quiz.js';
 import { isUserAuthorized } from '../middlewares/authentication.js';
 
 const router = express.Router();
@@ -14,5 +14,8 @@ router.get('/get', isUserAuthorized, getQuiz)
 
 //update data
 router.put('/delete', isUserAuthorized, deleteQuiz)
+
+//check quiz
+router.post('/check', isUserAuthorized, checkQuiz);
 
 export default router;
