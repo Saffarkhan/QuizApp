@@ -1,6 +1,6 @@
 import Quiz from '../model/quiz.js';
 import joi from 'joi';
-import { findQuiz, create, deleteSingleQuiz, findList } from '../services/quiz.js';
+import { findQuiz, create, deleteSingleQuiz, findQuizList } from '../services/quiz.js';
 
 // create quiz 
 export const createQuiz = async (req, res) => {
@@ -71,7 +71,7 @@ export const getQuizList = async (req, res) => {
         //find list of quiz created by one user nad return data
         //const quizList = await Quiz.find({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 });
         
-        const quizList = await findList({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 })
+        const quizList = await findQuizList({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 })
         return res.json({ error: false, info: "Quiz List", data: { quizList } })
 
     } catch (error) {

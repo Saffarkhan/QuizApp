@@ -13,7 +13,7 @@ export function findQuiz(quiz_data, projection) {
 }
 
 //find/show list of all active quizes 
-export function findList(quiz_data, projection) {
+export function findQuizList(quiz_data, projection) {
     return new Promise(async (resolve, reject) => {
         try {
             let quiz_list = await Quiz.find(quiz_data, projection)

@@ -1,7 +1,7 @@
 import User from '../model/user.js';
 import joi from "joi"
 import { createAuthenticationToken } from '../helpers/JWT.js';
-import { createUser, findUser } from '../services/user.js';
+import { createUser, deleteSingleUser, findUser } from '../services/user.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
@@ -112,18 +112,56 @@ export const getProfile = async (req, res) => {
         let user_id = req.authentication_payload.user_id
 
         //get the data from datase
-        // const user_profile = await User.findOne({ _id: user_id }, { name: 1, email: 1 })
+         //const user_profile = await User.findOne({ _id: user_id }, { name: 1, email: 1 })
 
-        const user_profile = await findUser({_id: user_id}, {name: 1, email: 1})
-
+        const user_profile = await findUser({ _id: user_id}, {name: 1, email: 1})
         if (!user_profile) {
             return res.status(404).json({ error: true, info: "No data avaialble in Database", data: {} });
         }
 
-        res.json({ error: false, info: "Complete data", data: { user_profile } });
+        return res.json({ error: false, info: "Complete data", data: { user_profile } });
 
     } catch (error) {
-        res.status(404).json({ error: true, info: error.message, data: {} });
+        return res.status(404).json({ error: true, info: error.message, data: {} });
     }
 
+}
+
+//delete single user (provide user id)
+export const deleteUser = async(req, res) => {
+    
+    let validation_schema = joi.object({
+        _id: joi.string().messages({
+            'string.empty': "_id cannot be empty",
+            'any.required': "_id is required"
+        }).required(),
+    })
+
+    //error handeling of api validation
+    let { error, value } = validation_schema.validate(req.query)
+    if (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+
+
+    try {
+        let {_id } = req.query;
+
+        // user is available in database or not
+        const user = await findUser({ _id });
+        if(!user){
+            return res.status(404).json({ error: true, info: "No user data found", data: {} });   
+        }
+
+        //check user data available to delete
+        if(user.is_deleted){
+            return res.status(404).json({ error: true, info: "User data has already been deleted", data: {} });   
+        }
+
+        await deleteSingleUser({ _id }, { $set: {is_deleted: true}})
+        return res.json({ error: false, info: "User data has been deleted successfully", data: {} })
+
+    } catch (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} });
+    }
 }

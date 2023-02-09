@@ -25,3 +25,16 @@ export function createUser(user_data) {
     })
 }
 
+
+//delete single user data 
+export function deleteSingleUser(user_data, projection){
+    return new Promise (async (resolve, reject) => {
+        try {
+            let delete_user = await User.updateOne(user_data, projection)
+            resolve(delete_user)
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
