@@ -1,5 +1,6 @@
 import Quiz from '../model/quiz.js';
 import joi from 'joi';
+import { findQuiz, create, deleteSingleQuiz, findList } from '../services/quiz.js';
 
 // create quiz 
 export const createQuiz = async (req, res) => {
@@ -51,11 +52,12 @@ export const createQuiz = async (req, res) => {
 
         const { title, difficulty_level, questions } = req.body;
 
-        const quiz = await Quiz.create({ user: req.authentication_payload.user_id, title, difficulty_level, questions })
-        res.json({ error: true, info: 'Your quiz has been created', data: { quiz } })
+        //const quiz = await Quiz.create({ user: req.authentication_payload.user_id, title, difficulty_level, questions })
+        const quiz = await create({user: req.authentication_payload.user_id, title, difficulty_level, questions})
+        return res.json({ error: true, info: 'Your quiz has been created', data: { quiz } })
 
     } catch (error) {
-        res.status(404).json({ error: true, info: error.message, data: {} });
+        return res.status(404).json({ error: true, info: error.message, data: {} });
     }
 }
 
@@ -67,7 +69,9 @@ export const getQuizList = async (req, res) => {
         let user_id = req.authentication_payload.user_id;
 
         //find list of quiz created by one user nad return data
-        const quizList = await Quiz.find({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 });
+        //const quizList = await Quiz.find({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 });
+        
+        const quizList = await findList({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 })
         return res.json({ error: false, info: "Quiz List", data: { quizList } })
 
     } catch (error) {
@@ -96,12 +100,14 @@ export const getQuiz = async (req, res) => {
         let { _id } = req.query
 
         //search database and get user_id
-        const quiz_data = await Quiz.findOne({ _id }, { is_deleted: 0, user: 0, __v: 0 });
+        //const quiz_data = await Quiz.findOne({ _id }, { is_deleted: 0, user: 0, __v: 0 });
+        const quiz_data = await findQuiz({ _id }, { is_deleted: 0, user: 0, __v: 0 })
+
         if (!quiz_data) {
             return res.status(404).json({ error: true, info: "No Quiz data found", data: {} })
         }
 
-        res.json({ error: false, info: "Quiz Data", data: { quiz_data } })
+        return res.json({ error: false, info: "Quiz Data", data: { quiz_data } })
 
 
     } catch (error) {
@@ -128,7 +134,8 @@ export const deleteQuiz = async (req, res) => {
     try {
         let { _id } = req.query;
 
-        const quiz = await Quiz.findOne({ _id });
+        //const quiz = await Quiz.findOne({ _id });
+        const quiz = await findQuiz({ _id });
         if (!quiz) {
             return res.status(404).json({ error: true, info: "No Quiz data found", data: {} })
         }
@@ -138,9 +145,10 @@ export const deleteQuiz = async (req, res) => {
         }
 
         //search and delete data
-        await Quiz.updateOne({ _id }, { $set: { is_deleted: true } })
+        //await Quiz.updateOne({ _id }, { $set: { is_deleted: true } })
+        await deleteSingleQuiz({ _id }, { $set: { is_deleted: true } })
 
-        res.json({ error: false, info: "Quiz deleted successfully", data: {} })
+        return res.json({ error: false, info: "Quiz deleted successfully", data: {} })
 
     } catch (error) {
         return res.status(404).json({ error: true, info: error.message, data: {} })
@@ -173,17 +181,20 @@ export const checkQuiz = async (req, res) => {
 
         //get quiz_id
         var { _id, answers } = req.body;
-        const quiz = await Quiz.findOne({ _id }).lean()
-
+        //const quiz = await Quiz.findOne({ _id }).lean()
+        const quiz = await findQuiz({ _id })
+        
         //check if quiz is avaible, if not show message
         if (!quiz) {
             return res.json({ error: true, info: "No Quiz found", data: {} })
         }
 
+        //check number of answers equal to number of questions
         if (quiz.questions.length !== answers.length) {
             return res.json({ error: true, info: "Answers must be of equal length to the questions", data: {} })
         }
 
+        //get ids of answer and question and check ids match or not
         for (let i = 0; i < quiz.questions.length; i += 1) {
             if (quiz.questions[i]._id.toString() !== answers[i].question_id) {
                 return res.json({ error: true, info: "Answers must be in the same order as the questions or question id does not exist", data: {} })

@@ -1,6 +1,7 @@
 import User from '../model/user.js';
 import joi from "joi"
 import { createAuthenticationToken } from '../helpers/JWT.js';
+import { createUser, findUser } from '../services/user.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
@@ -34,15 +35,18 @@ export const registerUser = async (req, res) => {
 
     try {
         //search query to find data from database
-        let user = await User.findOne({ email: email, is_deleted: false })
+        //let user = await User.findOne({ email: email, is_deleted: false })
 
+        let user = await findUser({email, is_deleted: false})
         //check if user exit, if yes return message
         if (user) {
             return res.status(404).json({ error: true, info: "A user with this email address already exists!", data: {} })
         }
 
         //if user not exist create new uesr
-        const registerUserdetails = await User.create({ name, email, password })
+        // const registerUserdetails = await User.create({ name, email, password })
+
+        const registerUserdetails = await createUser({name, email, password})
         res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
     }
     catch (error) {
@@ -77,8 +81,9 @@ export const loginUser = async (req, res, next) => {
 
     try {
         //search query for email and password
-        const user = await User.findOne({ email: email, password: password, is_deleted: false })
-
+        //let user = await User.findOne({ email: email, password: password, is_deleted: false })
+        let user = await findUser({email, password, is_deleted: false}) 
+        
         //if incorrect email and password return a message
         if (!user) {
             return res.status(404).json({ error: true, info: "Incorrect email and password", data: {} })
@@ -102,26 +107,14 @@ export const loginUser = async (req, res, next) => {
 
 //get the data from database
 export const getProfile = async (req, res) => {
-
-    let validation_schema = joi.object({
-        _id: joi.string().messages({
-                'string.empty': "_id cannot be empty",
-                'any.required': "_id is required"
-            }).required(),
-    })
-
-    //error handeling of api validation
-    let { error, value } = validation_schema.validate(req.query)
-    if (error) {
-        return res.status(404).json({ error: true, info: error.message, data: {} })
-    }
-
     try {
 
         let user_id = req.authentication_payload.user_id
 
         //get the data from datase
-        const user_profile = await User.findOne({ _id: user_id }, { name: 1, email: 1 })
+        // const user_profile = await User.findOne({ _id: user_id }, { name: 1, email: 1 })
+
+        const user_profile = await findUser({_id: user_id}, {name: 1, email: 1})
 
         if (!user_profile) {
             return res.status(404).json({ error: true, info: "No data avaialble in Database", data: {} });
