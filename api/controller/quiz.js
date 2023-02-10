@@ -1,6 +1,7 @@
 import Quiz from '../model/quiz.js';
 import joi from 'joi';
-import { findQuiz, create, deleteSingleQuiz, findQuizList } from '../services/quiz.js';
+import CRUD from '../services/crud.js';
+import AttemptedQuiz from '../model/quiz_attempted.js';
 
 // create quiz 
 export const createQuiz = async (req, res) => {
@@ -53,7 +54,7 @@ export const createQuiz = async (req, res) => {
         const { title, difficulty_level, questions } = req.body;
 
         //const quiz = await Quiz.create({ user: req.authentication_payload.user_id, title, difficulty_level, questions })
-        const quiz = await create({user: req.authentication_payload.user_id, title, difficulty_level, questions})
+        const quiz = await CRUD.create(Quiz, { user: req.authentication_payload.user_id, title, difficulty_level, questions })
         return res.json({ error: true, info: 'Your quiz has been created', data: { quiz } })
 
     } catch (error) {
@@ -70,14 +71,43 @@ export const getQuizList = async (req, res) => {
 
         //find list of quiz created by one user nad return data
         //const quizList = await Quiz.find({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 });
-        
-        const quizList = await findQuizList({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 })
+
+        const quizList = await CRUD.getList(Quiz,
+            { user: user_id, is_deleted: false },
+            { title: 1, difficulty_level: 1, user: 1 },
+            [
+                { path: "user", select: "name email" }
+            ]
+        )
+
         return res.json({ error: false, info: "Quiz List", data: { quizList } })
 
     } catch (error) {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
+
+//get attempted quiz list 
+export const getAttemptedQuizList = async(req, res) => {
+    try {
+
+        //find list of Attempted quizes
+        const attemptedQuizList = await CRUD.getList(AttemptedQuiz,
+            {  },
+            { __v: 0 },
+            [
+                { path: "attempted_by", select: "name email" },
+                { path: "quiz", select: "title difficulty_level "},
+            ]
+        )
+
+        return res.json({ error: false, info: "Attempted Quiz List", data: { attemptedQuizList } })
+
+    } catch (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+}
+
 
 //get single quiz Details
 export const getQuiz = async (req, res) => {
@@ -101,7 +131,7 @@ export const getQuiz = async (req, res) => {
 
         //search database and get user_id
         //const quiz_data = await Quiz.findOne({ _id }, { is_deleted: 0, user: 0, __v: 0 });
-        const quiz_data = await findQuiz({ _id }, { is_deleted: 0, user: 0, __v: 0 })
+        const quiz_data = await CRUD.find(Quiz, { _id }, { is_deleted: 0, user: 0, __v: 0 })
 
         if (!quiz_data) {
             return res.status(404).json({ error: true, info: "No Quiz data found", data: {} })
@@ -135,7 +165,7 @@ export const deleteQuiz = async (req, res) => {
         let { _id } = req.query;
 
         //const quiz = await Quiz.findOne({ _id });
-        const quiz = await findQuiz({ _id });
+        const quiz = await CRUD.find(Quiz, { _id });
         if (!quiz) {
             return res.status(404).json({ error: true, info: "No Quiz data found", data: {} })
         }
@@ -145,8 +175,7 @@ export const deleteQuiz = async (req, res) => {
         }
 
         //search and delete data
-        //await Quiz.updateOne({ _id }, { $set: { is_deleted: true } })
-        await deleteSingleQuiz({ _id }, { $set: { is_deleted: true } })
+        await CRUD.deleteObject(Quiz, _id)
 
         return res.json({ error: false, info: "Quiz deleted successfully", data: {} })
 
@@ -178,12 +207,11 @@ export const checkQuiz = async (req, res) => {
     }
 
     try {
-
         //get quiz_id
         var { _id, answers } = req.body;
         //const quiz = await Quiz.findOne({ _id }).lean()
-        const quiz = await findQuiz({ _id })
-        
+        const quiz = await CRUD.find(Quiz, { _id })
+
         //check if quiz is avaible, if not show message
         if (!quiz) {
             return res.json({ error: true, info: "No Quiz found", data: {} })
@@ -211,10 +239,18 @@ export const checkQuiz = async (req, res) => {
             return question.answer === answers_object[question._id] ? correct_count + 1 : correct_count
         }, 0)
 
-        //send res on success 
-        res.json({ error: false, info: "", data: { correct_answers, wrong_answer: quiz.questions.length - correct_answers } })
+        //get wrong_number of answer
+        let wrong_answers = quiz.questions.length - correct_answers;
+
+        let total_questions = quiz.questions.length;
+
+        //save attempted quiz data in database
+        await CRUD.create(AttemptedQuiz, { attempted_by: req.authentication_payload.user_id, quiz: _id, correct_answers, wrong_answers, total_questions })
+
+        res.json({ error: false, info: "", data: { correct_answers, wrong_answers } })
 
     } catch (error) {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
+

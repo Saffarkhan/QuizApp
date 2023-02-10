@@ -1,5 +1,5 @@
 import express from 'express';
-import { createQuiz, getQuizList, getQuiz, deleteQuiz, checkQuiz } from '../controller/quiz.js';
+import { createQuiz, getQuizList, getQuiz, deleteQuiz, checkQuiz, getAttemptedQuizList } from '../controller/quiz.js';
 import { isUserAuthorized } from '../middlewares/authentication.js';
 
 const router = express.Router();
@@ -8,6 +8,8 @@ const router = express.Router();
 router.post('/create', isUserAuthorized, createQuiz);
 
 router.get("/list", isUserAuthorized, getQuizList)
+
+router.get("/attemptedlist", isUserAuthorized, getAttemptedQuizList)
 
 //get quiz
 router.get('/get', isUserAuthorized, getQuiz)

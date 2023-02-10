@@ -14,7 +14,6 @@ const userSchema = new Schema({
         required: true
     },
     is_deleted: { type: Boolean, default: false }
-});
-
+})
 
 export default mongoose.model('User', userSchema);
