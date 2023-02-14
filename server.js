@@ -1,9 +1,11 @@
 import dotenv from 'dotenv'
+dotenv.config({ path: path.resolve(process.cwd(), "./.env") })
+
+
 import express from 'express';
 import mongoose from 'mongoose';
 import path from 'path';
 import routes from "./api/route/index.js"
-dotenv.config({ path: path.resolve(process.cwd(), "./.env") })
 
 const app = express();
 app.use(express.json());

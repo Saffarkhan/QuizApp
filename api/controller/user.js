@@ -3,7 +3,7 @@ import joi from "joi"
 import { createAuthenticationToken } from '../helpers/JWT.js';
 import CRUD from '../services/crud.js';
 import bcrypt from 'bcryptjs';
-
+import { sendEmail } from '../helpers/sendGrid.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
@@ -46,9 +46,22 @@ export const registerUser = async (req, res) => {
             return res.status(404).json({ error: true, info: "A user with this email address already exists!", data: {} })
         }
         //if user not exist create new uesr
-        // const registerUserdetails = await User.create({ name, email, password })
 
-        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp: Math.floor(Math.random() * 1000000) })
+        let otp = Math.floor(Math.random() * 1000000)
+        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp })
+
+        console.log("Sending Email")
+        let { error, data } = await sendEmail(email,
+            "Email verification<Quiz APP>",
+            `Your OTP to verify the email is ${otp}`
+        )
+
+        if (!error) {
+            console.log("Mail Sent")
+        } else {
+            console.log("Email sent failed")
+        }
+
         res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
     }
     catch (error) {
@@ -83,19 +96,19 @@ export const loginUser = async (req, res, next) => {
         const { email, password } = req.body;
 
         //search query for email and password
-        //let user = await User.findOne({ email: email, password: password, is_deleted: false })
         let user = await CRUD.find(User, { email, is_deleted: false })
-
 
         //if incorrect email and password return a message
         if (!user) {
             return res.status(404).json({ error: true, info: "Incorrect email", data: {} })
         }
 
+        //check password
         if (!await bcrypt.compare(password, user.password)) {
             return res.status(404).json({ error: true, info: "Incorrect password", data: {} })
         }
 
+        //check user verification email
         if (!user.verified) {
             return res.status(404).json({ error: true, info: "Please verify your email first", data: {} })
         }
