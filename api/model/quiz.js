@@ -29,7 +29,12 @@ const quizSchema = new Schema({
         validate: [minimumQuestions, '{PATH} should have minimum of 1']
     },
 
-    is_deleted: { type: Boolean, default: false }
+    is_deleted: { type: Boolean, default: false },
+
+    created_at: {
+        type: Date, 
+        default: Date.now 
+    }
 
 });
 

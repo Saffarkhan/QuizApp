@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 const userSchema = new Schema({
     email: {
-        type: String,           
+        type: String,
         required: true
     },
     password: {
@@ -13,7 +13,11 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    is_deleted: { type: Boolean, default: false }
+    otp: { type: Number, required: true },
+
+    verified: { type: Boolean, default: false },
+
+    is_deleted: { type: Boolean, default: false },
 })
 
 export default mongoose.model('User', userSchema);

@@ -2,6 +2,9 @@ import Quiz from '../model/quiz.js';
 import joi from 'joi';
 import CRUD from '../services/crud.js';
 import AttemptedQuiz from '../model/quiz_attempted.js';
+import mongoose from 'mongoose';
+
+var { ObjectId } = mongoose.Types
 
 // create quiz 
 export const createQuiz = async (req, res) => {
@@ -69,7 +72,7 @@ export const getQuizList = async (req, res) => {
         //get user id
         let user_id = req.authentication_payload.user_id;
 
-        //find list of quiz created by one user nad return data
+        //find list of quiz created by one user and return data
         //const quizList = await Quiz.find({ user: user_id, is_deleted: false }, { title: 1, difficulty_level: 1 });
 
         const quizList = await CRUD.getList(Quiz,
@@ -88,16 +91,16 @@ export const getQuizList = async (req, res) => {
 }
 
 //get attempted quiz list 
-export const getAttemptedQuizList = async(req, res) => {
+export const getAttemptedQuizList = async (req, res) => {
     try {
 
         //find list of Attempted quizes
         const attemptedQuizList = await CRUD.getList(AttemptedQuiz,
-            {  },
+            {},
             { __v: 0 },
             [
                 { path: "attempted_by", select: "name email" },
-                { path: "quiz", select: "title difficulty_level "},
+                { path: "quiz", select: "title difficulty_level " },
             ]
         )
 
@@ -107,7 +110,6 @@ export const getAttemptedQuizList = async(req, res) => {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
-
 
 //get single quiz Details
 export const getQuiz = async (req, res) => {
@@ -244,6 +246,8 @@ export const checkQuiz = async (req, res) => {
 
         let total_questions = quiz.questions.length;
 
+        //let time = Date.now();
+
         //save attempted quiz data in database
         await CRUD.create(AttemptedQuiz, { attempted_by: req.authentication_payload.user_id, quiz: _id, correct_answers, wrong_answers, total_questions })
 
@@ -254,3 +258,28 @@ export const checkQuiz = async (req, res) => {
     }
 }
 
+//get number of userd attempted quiz
+export const numberOfUersAttemptingQuiz = async (req, res) => {
+    try {
+        let { quiz_id } = req.query;
+
+        //using aggregation to perfomr queries
+        let response = await CRUD.aggregate(AttemptedQuiz, [
+
+            //stage-1: matches the data based on quiz_id
+            { $match: { quiz: ObjectId(quiz_id) } },
+
+            //stage-2: groups the documents and returns sum users attempted quiz
+            { $group: { _id: "$quiz", noOfUsers: { $sum: 1 } } },
+
+            //stage-3: applying projection to hide the _id 
+            { $project: { _id: 0 } }
+        ])
+
+        return res.json({ error: false, info: "Returned Data", data: { response } })
+
+    } catch (error) {
+        console.error(error)
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+}

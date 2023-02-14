@@ -21,6 +21,10 @@ const AttemptedQuizSchema = new Schema({
         validation: function (value) {
             return this.correct_answers + this.wrong_answers === value
         }
+    },
+    created_at: {
+        type: Date, 
+        default: Date.now 
     }
 })
 

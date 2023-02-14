@@ -48,7 +48,7 @@ export const registerUser = async (req, res) => {
         //if user not exist create new uesr
         // const registerUserdetails = await User.create({ name, email, password })
 
-        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd })
+        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp: Math.floor(Math.random() * 1000000) })
         res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
     }
     catch (error) {
@@ -67,7 +67,7 @@ export const loginUser = async (req, res, next) => {
             'string.email': "The given email is not a valid email address"
         }),
         password: joi.string().regex(passwordRegex).min(8).required().messages({
-            'any.required': "Passwword is required",
+            'any.required': "Password is required",
             'string.min': "Password length must be at least 8 characters long",
         })
     });
@@ -94,6 +94,10 @@ export const loginUser = async (req, res, next) => {
 
         if (!await bcrypt.compare(password, user.password)) {
             return res.status(404).json({ error: true, info: "Incorrect password", data: {} })
+        }
+
+        if (!user.verified) {
+            return res.status(404).json({ error: true, info: "Please verify your email first", data: {} })
         }
 
         //creating payload for authentication
@@ -170,5 +174,58 @@ export const deleteUser = async (req, res) => {
 
     } catch (error) {
         return res.status(404).json({ error: true, info: error.message, data: {} });
+    }
+}
+
+//Verify OTP
+export const verifyUser = async (req, res, next) => {
+
+    //api (request) validation
+    let user_otp_validation = joi.object({
+        email: joi.string().email().required().messages({
+            'any.required': "Email is required!",
+            'string.email': "The given email is not a valid email address"
+        }),
+        otp: joi.number().min(100000).max(999999).required().messages({
+            'any.required': "OTP is required",
+            'number.min': "OTP length must be 6 digits",
+            'number.max': "OTP length must be 6 digits",
+        })
+    });
+
+    let { error, value } = user_otp_validation.validate(req.body);
+    if (error) {
+        return res.status(400).json({ error: true, info: error.message, data: {} })
+    }
+
+    try {
+
+        //get user email and password from database
+        const { email, otp } = req.body;
+
+        //search query for email and password
+        //let user = await User.findOne({ email: email, password: password, is_deleted: false })
+        let user = await CRUD.find(User, { email, is_deleted: false })
+
+        //if incorrect email and password return a message
+        if (!user) {
+            return res.status(404).json({ error: true, info: "Incorrect email", data: {} })
+        }
+
+        if (user.verified) {
+            return res.status(404).json({ error: true, info: "Your Email is already verified", data: {} })
+        }
+
+        if (otp != user.otp) {
+            return res.status(404).json({ error: true, info: "Invalid PIN", data: {} })
+        }
+
+        await CRUD.updateOne(User, { _id: user._id }, { verified: true })
+
+        //creating payload for authentication
+        return res.json({ error: false, info: "Email verified Successfully ", data: {} })
+
+    } catch (error) {
+        res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
