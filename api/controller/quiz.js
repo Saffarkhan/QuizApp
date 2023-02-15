@@ -283,3 +283,14 @@ export const numberOfUersAttemptingQuiz = async (req, res) => {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
+
+export const checkConflit = async(req, res ) => {
+
+    try {
+        return res.json({ error: false, info: "Check code conflict ", data: { } })
+        
+    } catch (error) {
+        return res.json({ error: true, info: error.message, data: { quiz_data } })
+
+    }
+}
