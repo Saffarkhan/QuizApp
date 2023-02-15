@@ -294,3 +294,32 @@ export const checkConflit = async(req, res ) => {
 
     }
 }
+
+//Number of quizes attempted per day
+export const numberOfQuizesAttemptedPerDay = async (req, res) => {
+    try {
+        let { _date } = req.query;
+
+        const quiz_per_day = await CRUD.aggregate(AttemptedQuiz, [
+
+            { $group: { 
+                    _id: { 
+                      $dateToString: { 
+                        format: "%Y-%m-%d", 
+                        date: "$created_at"
+                      } 
+                    },
+                    count: { $sum: 1}
+                  }},
+
+            { $sort: {
+                    _id: 1
+                  }}
+        ])
+
+        return res.json({ error: false, info: "Quizes Attempted per day", data: { quiz_per_day } })
+
+    } catch (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+}
