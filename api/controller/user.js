@@ -236,7 +236,7 @@ export const verifyUser = async (req, res, next) => {
         await CRUD.updateOne(User, { _id: user._id }, { verified: true })
 
         //creating payload for authentication
-        return res.json({ error: false, info: "Email verified Successfully ", data: {} })
+        return res.json({ error: false, info: "Your Email verified Successfully ", data: {} })
 
     } catch (error) {
         res.status(404).json({ error: true, info: error.message, data: {} })
