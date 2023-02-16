@@ -318,7 +318,6 @@ export const pagination = async(req, res) => {
 
     //    let  { offset }  = req.query
     //    let { limit } = req.query
-
     //    const pages = await CRUD.getList(Quiz, {}, { __v: 0, is_deleted: 0 }, 0, offset, limit )
         
         let skip = parseInt(req.query.offset)
