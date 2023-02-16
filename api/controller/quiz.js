@@ -311,3 +311,36 @@ export const numberOfQuizesAttemptedPerDay = async (req, res) => {
         return res.status(404).json({ error: true, info: error.message, data: {} })
     }
 }
+
+//get pages 
+export const pagination = async(req, res) => {
+    try {
+
+    //    let  { offset }  = req.query
+    //    let { limit } = req.query
+
+    //    const pages = await CRUD.getList(Quiz, {}, { __v: 0, is_deleted: 0 }, 0, offset, limit )
+        
+        let skip = parseInt(req.query.offset)
+        let limit = parseInt(req.query.limit)
+        const pages = await CRUD.aggregate(Quiz, [
+            { $match: {} },
+            { $skip: skip }, 
+            { $limit: limit },
+            { $project: { __v: 0, is_deleted: 0 } }
+        ])
+
+        if (!pages) {
+            return res.status(404).json({ error: true, info: "No date found", data: {} })
+        }
+
+        if (limit < 0 || limit == 0) {
+            return res.status(404).json({ error: true, info: "Invalid page number", data: {} })
+        }
+
+        return res.json({ error: false, info: "Pages", data: { pages } })
+        
+    } catch (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+}
