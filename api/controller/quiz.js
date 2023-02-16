@@ -287,7 +287,6 @@ export const numberOfUersAttemptingQuiz = async (req, res) => {
 //Number of quizes attempted per day
 export const numberOfQuizesAttemptedPerDay = async (req, res) => {
     try {
-        let { _date } = req.query;
 
         const quiz_per_day = await CRUD.aggregate(AttemptedQuiz, [
 
