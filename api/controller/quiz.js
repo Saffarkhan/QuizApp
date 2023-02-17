@@ -133,7 +133,11 @@ export const getQuiz = async (req, res) => {
 
         //search database and get user_id
         //const quiz_data = await Quiz.findOne({ _id }, { is_deleted: 0, user: 0, __v: 0 });
-        const quiz_data = await CRUD.find(Quiz, { _id }, { is_deleted: 0, user: 0, __v: 0 })
+        //const quiz_data = await CRUD.find(Quiz, { _id }, { is_deleted: 0, user: 0, __v: 0 })
+        const quiz_data = await CRUD.aggregate(Quiz, [
+            { $match: { _id: ObjectId(_id) } },
+            { $project: { is_deleted: 0, user: 0, __v: 0 } }
+        ])
 
         if (!quiz_data) {
             return res.status(404).json({ error: true, info: "No Quiz data found", data: {} })
@@ -178,7 +182,6 @@ export const deleteQuiz = async (req, res) => {
 
         //search and delete data
         await CRUD.deleteObject(Quiz, _id)
-
         return res.json({ error: false, info: "Quiz deleted successfully", data: {} })
 
     } catch (error) {
