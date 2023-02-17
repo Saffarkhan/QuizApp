@@ -260,6 +260,20 @@ export const checkQuiz = async (req, res) => {
 
 //get number of userd attempted quiz
 export const numberOfUersAttemptingQuiz = async (req, res) => {
+    
+    let validation_schema = joi.object({
+        quiz_id: joi.string().messages({
+            'string.empty': "quiz_id cannot be empty",
+            'any.required': "quiz_id is required"
+        }).required(),
+    })
+
+    //error handeling of api validation
+    let { error, value } = validation_schema.validate(req.query)
+    if (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+    
     try {
         let { quiz_id } = req.query;
 
@@ -314,6 +328,22 @@ export const numberOfQuizesAttemptedPerDay = async (req, res) => {
 
 //get pages 
 export const pagination = async(req, res) => {
+    
+    let validation_schema = joi.object({
+        skip: joi.number().min(0).required().messages({
+            'any.required': "skip value is required"
+        }),
+        limit: joi.number().max(99999).required().messages({
+            'any.required': "page limit is required",
+        })
+    })
+
+    let { error, value } = validation_schema.validate()
+
+    if (error) {
+        return res.status(404).json({ error: true, info: error.message, data: {} })
+    }
+    
     try {
 
     //    let  { offset }  = req.query
