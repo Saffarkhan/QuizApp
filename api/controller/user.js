@@ -4,6 +4,8 @@ import { createAuthenticationToken } from '../helpers/JWT.js';
 import CRUD from '../services/crud.js';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../helpers/sendGrid.js';
+import { encrypt } from '../helpers/crypto.js';
+import { sendMesssag } from '../helpers/twilio.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
@@ -16,9 +18,9 @@ export const registerUser = async (req, res) => {
             'string.empty': "Name can not be empty",
             'any.required': "Name is required"
         }),
-        email: joi.string().email().required().messages({
-            'any.required': "Email is required",
-            'string.email': "The given email is not a valid email address",
+        email: joi.required().messages({
+            'any.required': "Number is required",
+            // 'string.email': "The given email is not a valid email address",
         }),
         password: joi.string().regex(new RegExp(passwordRegex)).required().messages({
             'any.required': "Passwword is required",
@@ -27,7 +29,6 @@ export const registerUser = async (req, res) => {
     })
 
     let { error, value } = validation_schema.validate(req.body)
-
     //api error handeling
     if (error) {
         return res.status(404).json({ error: true, info: error.message, data: {} })
@@ -47,10 +48,23 @@ export const registerUser = async (req, res) => {
         }
         //if user not exist create new uesr
 
-        let otp = Math.floor(Math.random() * 1000000)
+        // let otp = Math.floor(Math.random() * 1000000)
+
+        let otp = Math.floor(1000 + Math.random() * 1000000).toString();
+
         const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp })
 
-        console.log("Sending Email")
+        await sendMesssag(email, `Your Quiz App account verification code is ${otp}`)
+
+        if (!error) {
+            console.log("Otp Sent")
+        } else {
+            console.log("Otp sending failed")
+        }
+
+        return res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
+
+        /* console.log("Sending Email")
         let { error, data } = await sendEmail(email,
             "Email verification<Quiz APP>",
             `Your OTP to verify the email is ${otp}`
@@ -60,11 +74,10 @@ export const registerUser = async (req, res) => {
             console.log("Mail Sent")
         } else {
             console.log("Email sent failed")
-        }
-
-        res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
+        } */
     }
     catch (error) {
+        console.log(error)
         res.status(404).json({ error: true, info: error.message, data: {} })
 
     }
@@ -75,9 +88,9 @@ export const loginUser = async (req, res, next) => {
 
     //api (request) validation
     let user_login_validation = joi.object({
-        email: joi.string().email().required().messages({
+        email: joi.string().required().messages({
             'any.required': "Email is required!",
-            'string.email': "The given email is not a valid email address"
+            // 'string.email': "The given email is not a valid email address"
         }),
         password: joi.string().regex(passwordRegex).min(8).required().messages({
             'any.required': "Password is required",
@@ -195,9 +208,8 @@ export const verifyUser = async (req, res, next) => {
 
     //api (request) validation
     let user_otp_validation = joi.object({
-        email: joi.string().email().required().messages({
-            'any.required': "Email is required!",
-            'string.email': "The given email is not a valid email address"
+        email: joi.string().required().messages({
+            'any.required': "Number is required!",
         }),
         otp: joi.number().min(100000).max(999999).required().messages({
             'any.required': "OTP is required",
@@ -222,21 +234,21 @@ export const verifyUser = async (req, res, next) => {
 
         //if incorrect email and password return a message
         if (!user) {
-            return res.status(404).json({ error: true, info: "Incorrect email", data: {} })
+            return res.status(404).json({ error: true, info: "Incorrect Number", data: {} })
         }
 
         if (user.verified) {
-            return res.status(404).json({ error: true, info: "Your Email is already verified", data: {} })
+            return res.status(404).json({ error: true, info: "Your Number is already verified", data: {} })
         }
 
         if (otp != user.otp) {
-            return res.status(404).json({ error: true, info: "Invalid PIN", data: {} })
+            return res.status(404).json({ error: true, info: "Invalid OTP Number", data: {} })
         }
 
         await CRUD.updateOne(User, { _id: user._id }, { verified: true })
 
         //creating payload for authentication
-        return res.json({ error: false, info: "Your Email verified Successfully ", data: {} })
+        return res.json({ error: false, info: "Your Number verified Successfully ", data: {} })
 
     } catch (error) {
         res.status(404).json({ error: true, info: error.message, data: {} })
