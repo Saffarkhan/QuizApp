@@ -13,7 +13,7 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    otp: { type: Number, required: true },
+    otp: { type: String, required: true },
 
     verified: { type: Boolean, default: false },
 
