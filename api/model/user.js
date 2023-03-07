@@ -18,6 +18,9 @@ const userSchema = new Schema({
     verified: { type: Boolean, default: false },
 
     is_deleted: { type: Boolean, default: false },
+
+    notification: { type: String, default: null },
 })
+
 
 export default mongoose.model('User', userSchema);

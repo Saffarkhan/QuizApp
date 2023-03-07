@@ -4,7 +4,6 @@ import { createAuthenticationToken } from '../helpers/JWT.js';
 import CRUD from '../services/crud.js';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../helpers/sendGrid.js';
-import { encrypt } from '../helpers/crypto.js';
 import { sendMesssag } from '../helpers/twilio.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
