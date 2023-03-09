@@ -1,9 +1,10 @@
-import dotenv from 'dotenv'
-dotenv.config({ path: path.resolve(process.cwd(), "./.env") })
+import dotenv from 'dotenv/config'
+import path from 'path';
+
+//dotenv.config({ path: path.resolve(process.cwd(), "./.env") })
 
 import express from 'express';
 import mongoose from 'mongoose';
-import path from 'path';
 import routes from "./api/route/index.js"
 
 const app = express();

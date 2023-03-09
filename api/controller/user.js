@@ -5,6 +5,7 @@ import CRUD from '../services/crud.js';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '../helpers/sendGrid.js';
 import { sendMesssag } from '../helpers/twilio.js';
+import { uploadFile } from '../helpers/s3.js';
 
 const passwordRegex = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
 
@@ -24,7 +25,8 @@ export const registerUser = async (req, res) => {
         password: joi.string().regex(new RegExp(passwordRegex)).required().messages({
             'any.required': "Passwword is required",
             'string.pattern.base': 'Password must be strong. At least one upper case alphabet. At least one lower case alphabet. At least one digit. At least one special character. Minimum eight in length'
-        })
+        }),
+        image: joi.string().optional()
     })
 
     let { error, value } = validation_schema.validate(req.body)
@@ -36,7 +38,7 @@ export const registerUser = async (req, res) => {
     try {
         //search query to find data from database
 
-        const { name, email, password } = req.body;
+        const { name, email, password, image } = req.body;
         const saltRounds = 10;
         const hashedPwd = await bcrypt.hash(password, saltRounds);
 
@@ -49,17 +51,21 @@ export const registerUser = async (req, res) => {
 
         // let otp = Math.floor(Math.random() * 1000000)
 
+        await uploadFile(image)
+        
         let otp = Math.floor(1000 + Math.random() * 1000000).toString();
+        
+        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp, image })
 
-        const registerUserdetails = await CRUD.create(User, { name, email, password: hashedPwd, otp })
+        /* const {error, data } = await sendMesssag(email, `Your Quiz App account verification code is ${otp}`)
 
-        await sendMesssag(email, `Your Quiz App account verification code is ${otp}`)
-
+        console.log(error)
+        console.log(data)
         if (!error) {
             console.log("Otp Sent")
         } else {
             console.log("Otp sending failed")
-        }
+        } */
 
         return res.json({ error: false, info: "User data added to DB", data: { registerUserdetails } });
 
@@ -68,7 +74,7 @@ export const registerUser = async (req, res) => {
             "Email verification<Quiz APP>",
             `Your OTP to verify the email is ${otp}`
         )
-
+    
         if (!error) {
             console.log("Mail Sent")
         } else {

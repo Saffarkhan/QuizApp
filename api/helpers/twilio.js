@@ -3,6 +3,7 @@ import twilio from "twilio"
 export const sendMesssag = async (reveiver, message) => {
     try {
         const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+        console.log(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
 
         return client.messages.create({
             body: message,
