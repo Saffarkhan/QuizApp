@@ -319,7 +319,8 @@ export const numberOfQuizesAttemptedPerDay = async (req, res) => {
 
             { $sort: {
                     _id: 1
-                  }}
+                  }
+            }
         ])
 
         return res.json({ error: false, info: "Quizes Attempted per day", data: { quiz_per_day } })
